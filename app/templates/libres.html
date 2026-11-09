@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}Profesores libres{% endblock %}
+{% block sub %}Disponibilidad semanal de todo el personal, o el horario de un profesor en particular.{% endblock %}
+{% block cuerpo %}
+<section class="tarjeta"><form method="get" class="form-linea">
+  <label style="min-width:280px">Profesor<select name="profesor_id"><option value="">Todos: mostrar quién está libre</option>
+  {% for p in profesores %}<option value="{{ p.id }}" {{ 'selected' if profesor_id == p.id }}>{{ p.nombre }}</option>{% endfor %}</select></label>
+  <button>Consultar</button></form></section>
+{% if not franjas %}<div class="vacio-grande">Primero configura las franjas horarias en <a href="{{ url_for('admin', tabla='franjas') }}">Franjas</a>.</div>
+{% else %}<div class="tabla-scroll"><table class="horario"><thead><tr><th>Hora</th>{% for d in dias %}<th>{{ d|capitalize }}</th>{% endfor %}</tr></thead><tbody>
+{% for f in franjas %}{% if f.tipo == 'descanso' %}<tr class="descanso"><th>{{ f.inicio }} - {{ f.fin }}</th><td colspan="5">☕ Descanso</td></tr>{% else %}<tr><th>{{ f.inicio }} - {{ f.fin }}</th>
+{% for d in range(5) %}<td class="td-libres">{% set celda = celdas.get((d, f.id)) %}
+{% if profesor_id %}{% if celda %}<div class="clase-card materia-{{ celda.materia_id % 8 }}"><b>{{ celda.materia }}</b><small>{{ celda.grupo }} · {{ celda.salon }}</small></div>{% else %}<span class="estado-libre">LIBRE</span>{% endif %}
+{% else %}{% if celda %}<span class="estado-libre">{{ celda|length }} libre(s)</span><details class="lista-libres"><summary>Ver nombres</summary>{% for p in celda %}<span>{{ p.nombre }}</span>{% endfor %}</details>{% else %}<span class="sin-datos">—</span>{% endif %}{% endif %}</td>{% endfor %}</tr>{% endif %}{% endfor %}
+</tbody></table></div>{% endif %}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block titulo %}Ingreso de usuarios{% endblock %}
+{% block cabecera %}{% endblock %}
+{% block cuerpo %}
+<div class="acceso"><div class="acceso-caja">
+  <div class="logo">🎓</div>
+  <div><h1>Ingreso de usuarios</h1><p class="suave">Horario escolar</p></div>
+  <form method="post">
+    <label>Tipo de usuario
+      <select name="tipo" id="tipo" required>
+        <option value="">Seleccionar...</option>
+        <option value="propietario" {{ 'selected' if tipo == 'Administrador ' }}>Propietario</option>
+        <option value="rector" {{ 'selected' if tipo == 'rector' }}>Rector</option>
+        <option value="profesor" {{ 'selected' if tipo == 'profesor' }}>Profesor</option>
+      </select>
+    </label>
+    <label id="fila-codigo">Código del colegio<input name="codigo" id="codigo" autocomplete="organization"></label>
+    <label>Usuario<input name="usuario" required autocomplete="username"></label>
+    <label>Contraseña<input name="clave" type="password" required autocomplete="current-password"></label>
+    <button>Ingresar</button>
+  </form>
+  {% if not hay_propietario %}<p class="suave"><a href="{{ url_for('propietario_configurar') }}">Primera vez: crear la cuenta del propietario</a></p>{% endif %}
+</div></div>
+<script>
+(function () {
+  var tipo = document.getElementById('tipo');
+  var fila = document.getElementById('fila-codigo');
+  var codigo = document.getElementById('codigo');
+  function actualizar() {
+    var pide = tipo.value === 'rector' || tipo.value === 'profesor';
+    fila.style.display = pide ? '' : 'none';
+    codigo.required = pide;
+    if (!pide) codigo.value = '';
+  }
+  tipo.addEventListener('change', actualizar);
+  actualizar();
+})();
+</script>
+{% endblock %}

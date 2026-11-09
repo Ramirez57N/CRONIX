@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block titulo %}Consola del propietario{% endblock %}
+{% block sub %}Administración central de instituciones{% endblock %}
+{% block acciones %}<a class="boton" href="{{ url_for('propietario_auditoria') }}">Auditoría de soporte</a> <a class="boton" href="{{ url_for('propietario_salir') }}">Cerrar sesión</a>{% endblock %}
+{% block cuerpo %}
+<section class="panel"><h2>Registrar institución</h2><p class="suave">Cada institución tendrá su propia base de datos, usuarios y horarios separados.</p>
+<form method="post" class="form-grid"><label>Nombre de la institución<input name="nombre" required></label><label>Código único<input name="codigo" required pattern="[a-zA-Z0-9-]{3,30}" placeholder="colegio-central"></label><label>Usuario inicial del rector<input name="usuario" required minlength="3"></label><label>Contraseña inicial del rector<input name="clave" type="password" required minlength="6"></label><button type="submit">Crear institución</button></form></section>
+<section class="panel"><h2>Instituciones registradas</h2>{% if instituciones %}<div class="tabla-contenedor propietario-tabla-wrap"><table class="tabla-propietario"><thead><tr><th>Institución</th><th>Código</th><th>Profesores</th><th>Grupos</th><th>Último ingreso (UTC)</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{% for i in instituciones %}<tr><td>{{ i.nombre }}</td><td><code>{{ i.codigo }}</code></td><td>{{ i.profesores if i.profesores is not none else '—' }}</td><td>{{ i.grupos if i.grupos is not none else '—' }}</td><td>{{ i.ultimo_ingreso or 'Nunca' }}</td><td>{% if i.activa %}<strong>Activa</strong>{% else %}<strong>Desactivada</strong>{% endif %}</td><td class="propietario-acciones-celda">
+<div class="propietario-acciones">
+  <div class="propietario-acciones-principales">
+    {% if i.activa %}
+    <form method="post" action="{{ url_for('propietario_entrar', codigo=i.codigo) }}"><button type="submit">Entrar como soporte</button></form>
+    {% else %}<span class="suave propietario-bloqueado">Acceso bloqueado</span>{% endif %}
+    <a class="boton" href="{{ url_for('propietario_rectores', codigo=i.codigo) }}">Rectores</a>
+    <form method="post" action="{{ url_for('propietario_respaldo', codigo=i.codigo) }}"><button type="submit">Copia de seguridad</button></form>
+  </div>
+  <div class="propietario-acciones-administrativas">
+    <form method="post" action="{{ url_for('propietario_estado', codigo=i.codigo) }}">
+      <input type="hidden" name="estado" value="{{ 0 if i.activa else 1 }}">
+      <button type="submit" class="boton-estado">{{ 'Desactivar' if i.activa else 'Reactivar' }}</button>
+    </form>
+    <form class="propietario-eliminar-form" method="post" action="{{ url_for('propietario_eliminar', codigo=i.codigo) }}" onsubmit="return confirm('Esta acción elimina el registro y el archivo de datos de esta institución cuando está dentro de la carpeta administrada. ¿Tienes una copia de seguridad?');">
+      <label>Escribe {{ i.codigo }} para eliminar<input name="confirmacion" required autocomplete="off" placeholder="{{ i.codigo }}"></label>
+      <button type="submit" class="boton-eliminar">Eliminar</button>
+    </form>
+  </div>
+</div>
+</td></tr>{% endfor %}</tbody></table></div>{% else %}<p class="suave">Todavía no hay instituciones registradas.</p>{% endif %}</section>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% set nombres = {'profesores': 'Profesores', 'materias': 'Materias', 'grupos': 'Grupos', 'franjas': 'Franjas horarias'} %}
+{% block titulo %}{{ nombres.get(tabla, tabla|capitalize) }}{% endblock %}
+{% block sub %}{% if tabla == 'profesores' %}Personal docente, sus materias y su acceso al sistema.{% elif tabla == 'materias' %}Asignaturas que se dictan en el colegio.{% elif tabla == 'grupos' %}Cursos del colegio (por ejemplo 6A, 7B, 11A).{% else %}Horas de clase y descansos de la jornada. Se ordenan automáticamente por hora.{% endif %}{% endblock %}
+{% block cuerpo %}
+
+{% if tabla == 'profesores' %}
+<details class="tarjeta" {{ 'open' if not filas }}><summary>➕ Agregar profesor</summary>
+<form method="post">
+  <div class="grid-form">
+    <label>Nombre completo<input name="nombre" required></label>
+    <label>Usuario (opcional)<input name="usuario" autocomplete="off"></label>
+    <label>Contraseña inicial (opcional)<input name="clave" type="password" autocomplete="new-password"></label>
+  </div>
+  <fieldset><legend>Materias que dicta</legend><div class="checks">
+    {% for m in materias %}<label class="chk"><input type="checkbox" name="materias" value="{{ m.id }}"> {{ m.nombre }}</label>{% else %}<small>Crea primero las materias.</small>{% endfor %}</div></fieldset>
+  <div class="acciones-form"><button>Agregar profesor</button></div>
+</form></details>
+<div class="tabla-scroll"><table><thead><tr><th>Profesor</th><th>Materias</th><th>Clases/sem.</th><th>Acceso</th><th></th></tr></thead><tbody>
+{% for f in filas %}{% set u = accesos.get(f.id) %}{% set ms = mats.get(f.id, []) %}{% set mine = ms|map(attribute='id')|list %}<tr>
+  <td><b>{{ f.nombre }}</b></td>
+  <td>{% if ms %}<div class="chips">{% for m in ms %}<span class="materia-tag materia-{{ m.id % 8 }}">{{ m.nombre }}</span>{% endfor %}</div>{% else %}<span class="etiqueta ambar">Sin materias</span>{% endif %}</td>
+  <td>{{ horas.get(f.id, 0) }}</td>
+  <td>{% if u %}<span class="etiqueta verde">{{ u }}</span>{% else %}<span class="etiqueta">Sin acceso</span>{% endif %}</td>
+  <td class="acciones-celda">
+    <details class="editar">
+      <summary class="btn btn-sec btn-chico">Editar</summary>
+      <div class="editar-panel">
+        <div class="editar-titulo">
+          <div><h3>Editar profesor</h3><p>{{ f.nombre }}</p></div>
+          <div class="editar-cab-acciones">
+            <span class="etiqueta verde">Profesor</span>
+            <button type="button" class="editar-cerrar" aria-label="Cerrar ventana" title="Cerrar" onclick="this.closest('details.editar').open = false">&times;</button>
+          </div>
+        </div>
+        <form method="post" action="{{ url_for('materias_prof', pid=f.id) }}">
+          <h4>Materias que dicta</h4>
+          <div class="checks editar-checks">
+            {% for m in materias %}
+              <label class="chk"><input type="checkbox" name="materias" value="{{ m.id }}" {{ 'checked' if m.id in mine }}> {{ m.nombre }}</label>
+            {% endfor %}
+          </div>
+          <button class="btn-chico">Guardar materias</button>
+        </form>
+        <div class="editar-separador"></div>
+        <form method="post" action="{{ url_for('acceso', pid=f.id) }}">
+          <h4>{{ 'Cambiar contraseña' if u else 'Crear acceso al sistema' }}</h4>
+          {% if not u %}<label>Usuario<input name="usuario" placeholder="Usuario" required autocomplete="off"></label>{% endif %}
+          <label>{{ 'Nueva contraseña' if u else 'Contraseña' }}<input name="clave" type="password" placeholder="{{ 'Nueva contraseña' if u else 'Contraseña' }}" required autocomplete="new-password"></label>
+          <button class="btn-chico">{{ 'Cambiar contraseña' if u else 'Crear acceso' }}</button>
+        </form>
+      </div>
+    </details>
+    <form method="post" action="{{ url_for('eliminar', tabla=tabla, id=f.id) }}" onsubmit="return confirm('¿Eliminar este profesor?')">
+      <button class="rojo btn-chico">Eliminar</button>
+    </form>
+  </td>
+</tr>{% else %}<tr><td colspan="5" class="vacio">Aún no hay profesores. Agrega el primero arriba.</td></tr>{% endfor %}
+</tbody></table></div>
+
+{% elif tabla == 'franjas' %}
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Agregar franja</h2></div>
+<form method="post" class="form-linea form-franja-hora" id="form-nueva-franja">
+  <label>Inicio
+    <span class="hora-control"><input class="hora-escribible" name="inicio" type="text" inputmode="numeric" placeholder="07:00" maxlength="5" autocomplete="off" required aria-label="Hora de inicio"><button class="hora-reloj" type="button" aria-label="Elegir hora de inicio" title="Elegir hora">🕒</button><input class="selector-hora-nativo" type="time" tabindex="-1" aria-hidden="true"></span>
+  </label>
+  <label>Fin
+    <span class="hora-control"><input class="hora-escribible" name="fin" type="text" inputmode="numeric" placeholder="07:45" maxlength="5" autocomplete="off" required aria-label="Hora de fin"><button class="hora-reloj" type="button" aria-label="Elegir hora de fin" title="Elegir hora">🕒</button><input class="selector-hora-nativo" type="time" tabindex="-1" aria-hidden="true"></span>
+  </label>
+  <label>Tipo<select name="tipo"><option value="clase">Clase</option><option value="descanso">Descanso</option></select></label>
+  <button>Agregar franja</button>
+</form></section>
+<div class="tabla-scroll"><table><thead><tr><th>Inicio</th><th>Fin</th><th>Duración</th><th>Tipo</th><th></th></tr></thead><tbody>
+{% for f in filas %}<tr class="{{ 'fila-desc' if f.tipo == 'descanso' }}">
+  <td><span class="hora-control hora-control-tabla"><input class="hora-escribible" name="inicio" type="text" inputmode="numeric" value="{{ f.inicio }}" form="ef{{ f.id }}" maxlength="5" required><button class="hora-reloj" type="button" aria-label="Elegir hora de inicio" title="Elegir hora">🕒</button><input class="selector-hora-nativo" type="time" value="{{ f.inicio }}" tabindex="-1" aria-hidden="true"></span></td>
+  <td><span class="hora-control hora-control-tabla"><input class="hora-escribible" name="fin" type="text" inputmode="numeric" value="{{ f.fin }}" form="ef{{ f.id }}" maxlength="5" required><button class="hora-reloj" type="button" aria-label="Elegir hora de fin" title="Elegir hora">🕒</button><input class="selector-hora-nativo" type="time" value="{{ f.fin }}" tabindex="-1" aria-hidden="true"></span></td>
+  <td>{{ f.dur }} min</td>
+  <td><select name="tipo" form="ef{{ f.id }}"><option value="clase" {{ 'selected' if f.tipo == 'clase' }}>Clase</option><option value="descanso" {{ 'selected' if f.tipo == 'descanso' }}>☕ Descanso</option></select></td>
+  <td class="acciones-celda"><form id="ef{{ f.id }}" method="post" action="{{ url_for('editar_franja', fid=f.id) }}"><button class="btn-chico">Guardar</button></form>
+  <form method="post" action="{{ url_for('eliminar', tabla=tabla, id=f.id) }}" onsubmit="return confirm('¿Eliminar esta franja?')"><button class="rojo btn-chico">Eliminar</button></form></td>
+</tr>{% else %}<tr><td colspan="5" class="vacio">Aún no hay franjas. Agrega la primera arriba.</td></tr>{% endfor %}
+</tbody></table></div>
+<p class="leyenda">💡 Puedes escribir la hora en formato de 24 horas (por ejemplo, 07:00) o pulsar el reloj para seleccionarla. Los huecos entre franjas también aparecen como descanso en el horario.</p>
+<script>
+(function () {
+  function normalizarHora(valor) {
+    var v = (valor || '').trim().replace(/\s/g, '');
+    if (/^\d{1,2}:\d{2}$/.test(v)) {
+      var p = v.split(':');
+      var h = Number(p[0]), m = Number(p[1]);
+      if (h >= 0 && h <= 23 && m >= 0 && m <= 59) return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    }
+    if (/^\d{3,4}$/.test(v)) {
+      v = v.padStart(4, '0');
+      var hh = Number(v.slice(0, 2)), mm = Number(v.slice(2));
+      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    }
+    return null;
+  }
+  document.querySelectorAll('.hora-control').forEach(function (control) {
+    var texto = control.querySelector('.hora-escribible');
+    var reloj = control.querySelector('.hora-reloj');
+    var selector = control.querySelector('.selector-hora-nativo');
+    if (!texto || !reloj || !selector) return;
+    if (texto.value) selector.value = texto.value;
+    texto.addEventListener('blur', function () {
+      if (!texto.value.trim()) return;
+      var hora = normalizarHora(texto.value);
+      if (hora) { texto.value = hora; selector.value = hora; texto.setCustomValidity(''); }
+      else { texto.setCustomValidity('Escribe una hora válida, por ejemplo 07:00 (de 00:00 a 23:59).'); }
+    });
+    texto.addEventListener('input', function () { texto.setCustomValidity(''); });
+    reloj.addEventListener('click', function () {
+      var hora = normalizarHora(texto.value);
+      if (hora) selector.value = hora;
+      try { if (selector.showPicker) selector.showPicker(); else selector.click(); }
+      catch (e) { selector.focus(); selector.click(); }
+    });
+    selector.addEventListener('change', function () {
+      texto.value = selector.value;
+      texto.setCustomValidity('');
+    });
+  });
+  var form = document.getElementById('form-nueva-franja');
+  if (form) form.addEventListener('submit', function (e) {
+    var campos = form.querySelectorAll('.hora-escribible');
+    var valores = [];
+    campos.forEach(function (campo) {
+      var hora = normalizarHora(campo.value);
+      if (hora) { campo.value = hora; campo.setCustomValidity(''); valores.push(hora); }
+      else { campo.setCustomValidity('Escribe una hora válida, por ejemplo 07:00.'); campo.reportValidity(); }
+    });
+    if (valores.length === 2 && valores[1] <= valores[0]) {
+      campos[1].setCustomValidity('La hora de fin debe ser posterior a la hora de inicio.');
+      campos[1].reportValidity();
+      e.preventDefault();
+    }
+  });
+})();
+</script>
+
+{% else %}
+<section class="tarjeta"><form method="post" class="form-linea">
+  <label style="flex:1;min-width:220px">{{ 'Nombre de la materia' if tabla == 'materias' else 'Nombre del grupo' }}<input name="nombre" placeholder="{{ 'Ej. Matemáticas' if tabla == 'materias' else 'Ej. 6A' }}" required></label>
+  <button>Agregar</button></form></section>
+{% if tabla == 'grupos' %}
+<div class="tabla-scroll"><table><thead><tr><th>Grupo</th><th>Aula principal</th><th></th></tr></thead><tbody>
+{% for f in filas %}<tr><td><b>{{ f.nombre }}</b></td><td>{% if aula_de.get(f.id) %}{{ aula_de[f.id] }}{% else %}<a href="{{ url_for('aulas') }}"><span class="etiqueta ambar">Sin aula · asignar</span></a>{% endif %}</td>
+<td class="acciones-celda"><form method="post" action="{{ url_for('eliminar', tabla=tabla, id=f.id) }}" onsubmit="return confirm('¿Eliminar este grupo?')"><button class="rojo btn-chico">Eliminar</button></form></td></tr>
+{% else %}<tr><td colspan="3" class="vacio">Aún no hay grupos.</td></tr>{% endfor %}</tbody></table></div>
+{% else %}
+<div class="tabla-scroll"><table><thead><tr><th>Materia</th><th>La dictan</th><th></th></tr></thead><tbody>
+{% for f in filas %}<tr><td><span class="materia-tag materia-{{ f.id % 8 }}">{{ f.nombre }}</span></td>
+<td>{% if quienes.get(f.id) %}{{ quienes[f.id]|join(', ') }}{% else %}<span class="etiqueta ambar">Nadie la dicta</span>{% endif %}</td>
+<td class="acciones-celda"><form method="post" action="{{ url_for('eliminar', tabla=tabla, id=f.id) }}" onsubmit="return confirm('¿Eliminar esta materia?')"><button class="rojo btn-chico">Eliminar</button></form></td></tr>
+{% else %}<tr><td colspan="3" class="vacio">Aún no hay materias.</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endif %}
+{% endblock %}

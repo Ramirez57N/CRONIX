@@ -1,0 +1,24 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Horario · {{ nombre }}</title>
+<style>
+@page{size:A4 landscape;margin:12mm}
+*{box-sizing:border-box}body{font:13px/1.35 Arial,Helvetica,sans-serif;margin:24px;color:#172033}
+.barra{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}
+h1{margin:0;font-size:24px}p{margin:3px 0 0;color:#59677b}
+button{font:inherit;font-weight:700;padding:9px 16px;border:0;border-radius:8px;background:#245da8;color:#fff;cursor:pointer}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1px solid #b9c4d3;padding:7px;text-align:center;vertical-align:middle;height:52px}
+th{background:#e9eff7;font-size:12px}tbody th{width:96px;white-space:nowrap}
+td b{display:block;font-size:13px}td small{display:block;color:#4b5a70}
+tr.desc td,tr.desc th{background:#fff4d6;color:#7a5b00;font-weight:700;height:26px}
+.pie{margin-top:10px;color:#7b8798;font-size:11px}
+@media print{button{display:none}body{margin:0}}
+</style></head><body>
+<div class="barra"><div><h1>Horario {{ {'grupo': 'del grupo', 'profesor': 'del profesor', 'salon': 'del salón'}[tipo] }} {{ nombre }}</h1><p>Horario semanal de clases</p></div><button onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button></div>
+<table><thead><tr><th>Hora</th>{% for d in dias %}<th>{{ d|capitalize }}</th>{% endfor %}</tr></thead><tbody>
+{% for f in franjas %}{% if loop.previtem and loop.previtem.fin != f.inicio %}<tr class="desc"><th>{{ loop.previtem.fin }} - {{ f.inicio }}</th><td colspan="5">Descanso</td></tr>{% endif %}
+{% if f.tipo == 'descanso' %}<tr class="desc"><th>{{ f.inicio }} - {{ f.fin }}</th><td colspan="5">Descanso</td></tr>{% else %}<tr><th>{{ f.inicio }} - {{ f.fin }}</th>
+{% for n in range(5) %}{% set c = celdas.get((n, f.id)) %}<td>{% if c %}<b>{{ c.materia }}</b><small>{{ c.profesor if tipo == 'grupo' else c.grupo }}</small><small>{{ c.salon if tipo != 'salon' else c.profesor }}</small>{% endif %}</td>{% endfor %}</tr>{% endif %}{% endfor %}
+</tbody></table>
+<p class="pie">Generado el {{ hoy }} · {{ nombre_colegio or 'Horario escolar' }}</p>
+</body></html>

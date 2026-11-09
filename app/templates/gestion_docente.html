@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titulo %}Respaldos e historial{% endblock %}
+{% block sub %}Guarda versiones del horario, restáuralas y consulta quién cambió qué.{% endblock %}
+{% block cuerpo %}
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Guardar una copia</h2></div>
+<div class="form-linea">
+<form method="post" action="{{ url_for('guardar_version') }}" class="form-linea"><label style="min-width:260px">Descripción de la versión<input name="descripcion" value="Respaldo antes de cambios"></label><button>💾 Guardar versión del horario</button></form>
+<form method="post" action="{{ url_for('backup') }}"><button class="btn-sec">Copia completa de la base de datos</button></form></div>
+<p class="ayuda" style="margin-top:12px">Una versión guarda solo las clases del horario. La copia completa incluye profesores, usuarios y todo lo demás.</p></section>
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Versiones guardadas</h2></div>
+<div class="tabla-scroll"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Descripción</th><th></th></tr></thead><tbody>
+{% for v in versiones %}<tr><td>{{ v.fecha }}</td><td>{{ v.usuario }}</td><td>{{ v.descripcion }}</td><td class="acciones-celda"><form method="post" action="{{ url_for('restaurar_version', vid=v.id) }}" onsubmit="return confirm('Se reemplazará el horario actual. ¿Continuar?')"><button class="rojo btn-chico">Restaurar</button></form></td></tr>{% else %}<tr><td colspan="4" class="vacio">Aún no hay versiones.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Actividad reciente</h2></div>
+<div class="tabla-scroll"><table><thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead><tbody>
+{% for h in historial %}<tr><td>{{ h.fecha }}</td><td>{{ h.usuario }}</td><td>{{ h.accion }}</td><td>{{ h.detalle }}</td></tr>{% else %}<tr><td colspan="4" class="vacio">Sin movimientos registrados.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

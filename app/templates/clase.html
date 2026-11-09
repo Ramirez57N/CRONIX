@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar clase' if cid else 'Nueva clase' }}{% endblock %}
+{% block sub %}El sistema comprueba que no haya cruces de profesor, grupo ni aula.{% endblock %}
+{% block cuerpo %}
+<section class="tarjeta" style="max-width:820px">
+<form method="post">
+  <div class="grid-form">
+  {% for campo, etq, opts in selects %}<div><label>{{ etq }}
+    <select name="{{ campo }}" id="{{ campo }}" required>{% for o in opts %}
+    <option value="{{ o.id }}" {% if campo == 'profesor_id' %}data-m=",{{ mats_prof.get(o.id, [])|join(',') }},"{% endif %} {{ 'selected' if o.id == c[campo] }}>{{ o.nombre }}</option>{% endfor %}</select></label>
+    {% if campo == 'profesor_id' %}<small id="aviso" class="ausente" hidden>Ningún profesor tiene asignada esa materia. Asígnasela en Profesores.</small>{% endif %}</div>{% endfor %}
+  </div>
+  <div class="acciones-form">
+    <button name="accion" value="guardar">Guardar clase</button>
+    {% if cid %}<button name="accion" value="eliminar" class="rojo" onclick="return confirm('¿Eliminar esta clase?')">Eliminar</button>{% endif %}
+    <a class="btn btn-sec" href="{{ url_for('horario') }}">Cancelar</a>
+  </div>
+</form></section>
+<script>
+const mat = document.getElementById('materia_id'), prof = document.getElementById('profesor_id'),
+      aviso = document.getElementById('aviso');
+function filtrar() {
+  const m = mat.value ? ',' + mat.value + ',' : '#';
+  let primero = null;
+  for (const o of prof.options) {
+    const ok = o.dataset.m.includes(m);
+    o.hidden = !ok; o.disabled = !ok;
+    if (ok && !primero) primero = o;
+  }
+  if (prof.selectedOptions[0] && prof.selectedOptions[0].disabled)
+    prof.value = primero ? primero.value : '';
+  aviso.hidden = !!primero;
+}
+mat.addEventListener('change', filtrar); filtrar();
+</script>
+{% endblock %}

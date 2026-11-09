@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titulo %}{% if session.rol == 'rector' %}Horario{% if nombre_sel %} · {{ nombre_sel }}{% endif %}{% else %}Mi horario{% endif %}{% endblock %}
+{% block sub %}{% if session.rol == 'rector' %}Elige un grupo, profesor o salón. Arrastra una clase para moverla o pulsa + para agregar una.{% else %}Tu horario semanal de clases.{% endif %}{% endblock %}
+{% block acciones %}{% if celdas is not none and ver %}<a class="btn btn-sec" href="{{ url_for('imprimir_horario', ver=ver) }}" target="_blank">🖨️ Imprimir</a>{% endif %}{% endblock %}
+{% block cuerpo %}
+{% if session.rol == 'rector' %}
+<section class="tarjeta selector">
+  <div class="pildoras"><span class="et">GRUPOS</span>
+    {% for o in opciones[0][2] %}<a class="pildora{{ ' activa' if ver == 'grupo:' ~ o.id }}" href="{{ url_for('horario', ver='grupo:' ~ o.id) }}">{{ o.nombre }}</a>{% else %}<small>Aún no hay grupos. <a href="{{ url_for('admin', tabla='grupos') }}">Crear grupos</a></small>{% endfor %}</div>
+  <div class="form-linea">
+    <form method="get"><label>Ver por profesor<select name="ver" onchange="this.form.submit()"><option value="">Elegir profesor…</option>{% for o in opciones[1][2] %}<option value="profesor:{{ o.id }}" {{ 'selected' if ver == 'profesor:' ~ o.id }}>{{ o.nombre }}</option>{% endfor %}</select></label></form>
+    <form method="get"><label>Ver por salón<select name="ver" onchange="this.form.submit()"><option value="">Elegir salón…</option>{% for o in opciones[2][2] %}<option value="salon:{{ o.id }}" {{ 'selected' if ver == 'salon:' ~ o.id }}>{{ o.nombre }}</option>{% endfor %}</select></label></form>
+  </div>
+</section>
+{% endif %}
+{% if celdas is none %}<div class="vacio-grande">👆 Selecciona qué horario quieres ver.</div>
+{% elif not franjas %}<div class="vacio-grande">Primero crea las franjas horarias en <a href="{{ url_for('admin', tabla='franjas') }}">Franjas</a>.</div>
+{% else %}
+<div class="tabla-scroll"><table class="horario"><thead><tr><th>Hora</th>{% for d in dias %}<th>{{ d|capitalize }}</th>{% endfor %}</tr></thead><tbody>
+{% for f in franjas %}{% if loop.previtem and loop.previtem.fin != f.inicio %}<tr class="descanso"><th>{{ loop.previtem.fin }} - {{ f.inicio }}</th><td colspan="5">☕ Descanso</td></tr>{% endif %}
+{% if f.tipo == 'descanso' %}<tr class="descanso"><th>{{ f.inicio }} - {{ f.fin }}</th><td colspan="5">☕ Descanso</td></tr>{% else %}<tr><th>{{ f.inicio }} - {{ f.fin }}</th>
+{% for n in range(5) %}{% set c = celdas.get((n, f.id)) %}<td data-dia="{{ n }}" data-franja="{{ f.id }}" {% if session.rol == 'rector' %}ondragover="event.preventDefault()" ondrop="soltarClase(event,this)"{% endif %}>
+{% if c %}{% if session.rol == 'rector' %}<div class="clase-arrastrable" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','{{ c.id }}')"><a class="clase-card materia-{{ c.materia_id % 8 }}" href="{{ url_for('clase', cid=c.id) }}">{% else %}<div class="clase-card materia-{{ c.materia_id % 8 }}">{% endif %}<b>{{ c.materia }}</b><small>{{ c.profesor if tipo == 'grupo' else c.grupo }}</small><small>{{ c.salon if tipo != 'salon' else c.profesor }}</small>{% if session.rol == 'rector' %}</a></div>{% else %}</div>{% endif %}
+{% elif session.rol == 'rector' %}<a class="mas" href="{{ url_for('clase', cid=0, dia=n, franja_id=f.id, **{tipo ~ '_id': i}) }}" title="Agregar clase">+</a>{% endif %}</td>{% endfor %}</tr>{% endif %}{% endfor %}
+</tbody></table></div>
+{% if session.rol == 'rector' %}<p class="leyenda">💡 Arrastra una clase a otra casilla para moverla. El sistema evita cruces de profesor, grupo y aula.</p>{% endif %}
+{% endif %}
+{% if session.rol == 'rector' %}<script>
+function soltarClase(ev, celda) {
+  ev.preventDefault();
+  const id = ev.dataTransfer.getData('text/plain'); if (!id) return;
+  const f = document.createElement('form'); f.method = 'post'; f.action = '/admin/clase/' + id + '/mover';
+  for (const [k, v] of Object.entries({dia: celda.dataset.dia, franja_id: celda.dataset.franja})) {
+    const i = document.createElement('input'); i.type = 'hidden'; i.name = k; i.value = v; f.appendChild(i);
+  }
+  document.body.appendChild(f); f.submit();
+}
+</script>{% endif %}
+{% endblock %}

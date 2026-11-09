@@ -1,0 +1,14 @@
+<section class="tarjeta">
+  <div class="tarjeta-cab"><h2>Ahora mismo</h2>{% if e.franja %}<span class="etiqueta azul">{{ e.franja.inicio }} - {{ e.franja.fin }}</span>{% endif %}</div>
+  {% if not e.franja %}<p class="vacio">No hay clases en este momento (fuera de horario, fin de semana o sin franjas creadas).</p>
+  {% elif e.descanso %}<p class="aviso-descanso">☕ <b>Descanso:</b> no hay clases en este momento.</p>
+  {% else %}
+    {% if e.en_clase %}<div class="tabla-scroll"><table><thead><tr><th>Profesor</th><th>Materia</th><th>Grupo</th><th>Aula</th></tr></thead><tbody>
+    {% for c in e.en_clase %}<tr>
+      <td>{% if c.reemplazo %}<span class="cubierto">{{ c.reemplazo }}</span> <small>(cubre a {{ c.profesor }})</small>{% elif c.ausente %}<span class="ausente">{{ c.profesor }} · ausente, sin reemplazo</span>{% else %}{{ c.profesor }}{% endif %}</td>
+      <td><span class="materia-tag materia-{{ c.materia_id % 8 }}">{{ c.materia }}</span></td><td>{{ c.grupo }}</td><td>{{ c.salon }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p class="vacio">Nadie está en clase.</p>{% endif %}
+    <h3 style="margin:18px 0 8px">Profesores libres</h3>
+    {% if e.libres %}<div class="chips">{% for p in e.libres %}<span class="chip">{{ p.nombre }}</span>{% endfor %}</div>{% else %}<p class="vacio">Ninguno</p>{% endif %}
+  {% endif %}
+</section>

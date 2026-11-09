@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block cabecera %}{% endblock %}
+{% block cuerpo %}
+<div class="acceso"><div class="acceso-caja">
+  <div class="logo">🎓</div>
+  <div><h1>Horario escolar</h1><p class="suave">{{ titulo }}</p></div>
+  <form method="post">
+    <label>Usuario<input name="usuario" required autofocus autocomplete="username"></label>
+    <label>Contraseña<input name="clave" type="password" required autocomplete="current-password"></label>
+    <button>{{ boton }}</button>
+  </form>
+  <p class="suave" style="margin-top:18px"><a href="{{ url_for('colegio_login') }}">Acceso de instituciones</a> · <a href="{{ url_for('propietario_login') }}">Administrador</a>
+</div></div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}Mi cuenta{% endblock %}
+{% block sub %}Usuario: <b>{{ session.usuario }}</b> · {{ 'Rector' if session.rol == 'rector' else 'Profesor' }}{% endblock %}
+{% block cuerpo %}
+<section class="tarjeta" style="max-width:480px"><div class="tarjeta-cab"><h2>Cambiar contraseña</h2></div>
+<form method="post" class="col" style="max-width:none">
+  <label>Contraseña actual<input name="actual" type="password" required autocomplete="current-password"></label>
+  <label>Contraseña nueva (mínimo 6 caracteres)<input name="nueva" type="password" minlength="6" required autocomplete="new-password"></label>
+  <label>Repite la contraseña nueva<input name="repetir" type="password" minlength="6" required autocomplete="new-password"></label>
+  <div><button>Cambiar contraseña</button></div>
+</form></section>
+{% endblock %}

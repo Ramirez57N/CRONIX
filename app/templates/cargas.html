@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Intensidad horaria{% endblock %}
+{% block sub %}Cuántas horas por semana recibe cada grupo de cada materia. El generador usa solo las materias con horas.{% endblock %}
+{% block cuerpo %}
+<section class="tarjeta selector-cargas">
+  <label>Grupo<select id="grupo-selector" onchange="window.location.href='{{ url_for('cargas') }}?grupo_id='+this.value">
+    {% for g in grupos %}<option value="{{ g.id }}" {% if g.id == grupo_id %}selected{% endif %}>{{ g.nombre }}</option>{% endfor %}</select></label>
+  <span class="ayuda" style="margin:0 0 8px">Deja en 0 las materias que este grupo no recibe.</span>
+</section>
+{% if grupos %}
+<form method="post" class="tarjeta">
+  <input type="hidden" name="grupo_id" value="{{ grupo_id }}">
+  <div class="tarjeta-cab"><h2>Materias de {{ (grupos|selectattr('id','equalto',grupo_id)|first).nombre }}</h2><button type="submit">Guardar todas las cargas</button></div>
+  <div class="lista-materias-cargas">
+    {% for m in materias %}
+    <div class="fila-materia-carga">
+      <span class="materia-tag materia-{{ m.id % 8 }}" style="justify-self:start">{{ m.nombre }}</span>
+      <label class="horas-carga">Horas por semana<input type="number" name="horas_{{ m.id }}" min="0" max="35" value="{{ cargas_grupo.get(m.id, 0) }}" aria-label="Horas semanales de {{ m.nombre }}"></label>
+      {% if m.id in cargas_grupo %}<button class="rojo btn-chico boton-eliminar-carga" type="submit" form="eliminar-{{ m.id }}" aria-label="Quitar {{ m.nombre }}">Quitar</button>{% else %}<span class="sin-carga">Sin asignar</span>{% endif %}
+    </div>
+    {% else %}<p class="vacio">Primero registra las materias en el menú Materias.</p>{% endfor %}
+  </div>
+  <div class="pie-cargas"><strong>Total semanal: <span id="total-horas">0</span> horas <small>de {{ espacios }} espacios disponibles</small></strong><button type="submit">Guardar todas las cargas</button></div>
+</form>
+{% for m in materias if m.id in cargas_grupo %}
+<form id="eliminar-{{ m.id }}" method="post" action="{{ url_for('eliminar_carga') }}" class="oculto"><input type="hidden" name="grupo_id" value="{{ grupo_id }}"><input type="hidden" name="materia_id" value="{{ m.id }}"></form>
+{% endfor %}
+{% endif %}
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Resumen por grupo</h2></div>
+<div class="tabla-scroll"><table><thead><tr><th>Grupo</th><th>Materias</th><th>Horas por semana</th><th>Ocupación</th></tr></thead><tbody>
+{% for r in resumen %}<tr><td><a href="{{ url_for('cargas', grupo_id=r.id) }}"><b>{{ r.grupo }}</b></a></td><td>{{ r.materias }}</td><td>{{ r.horas }}</td>
+<td><div style="display:flex;gap:10px;align-items:center"><div class="barra {{ 'excede' if r.horas > espacios }}"><i style="width:{{ [100, (r.horas * 100 / espacios)|round|int if espacios else 0]|min }}%"></i></div><small>{% if r.horas > espacios %}<span class="ausente">Excede los {{ espacios }} espacios</span>{% else %}{{ r.horas }} de {{ espacios }}{% endif %}</small></div></td></tr>
+{% else %}<tr><td colspan="4" class="vacio">Todavía no hay intensidades configuradas.</td></tr>{% endfor %}
+</tbody></table></div></section>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const inputs = [...document.querySelectorAll('.horas-carga input')];
+  const total = document.getElementById('total-horas');
+  if (!total) return;
+  const actualizar = () => total.textContent = inputs.reduce((s, i) => s + (Number(i.value) || 0), 0);
+  inputs.forEach(i => i.addEventListener('input', actualizar)); actualizar();
+});
+</script>
+{% endblock %}

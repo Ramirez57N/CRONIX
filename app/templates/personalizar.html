@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block titulo %}Personalizar colegio{% endblock %}
+{% block sub %}Color y logo que verán el rector y los profesores de {{ nombre_colegio or 'tu colegio' }}.{% endblock %}
+{% block cuerpo %}
+<section class="panel"><h2>Color y logo</h2>
+<form method="post" enctype="multipart/form-data" class="form-grid">
+  <label>Color principal<input type="color" name="color" value="{{ color_colegio or '#245da8' }}"></label>
+  <label>Logo (PNG, JPG, WEBP o GIF, máximo 300 KB)<input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/gif"></label>
+  <button type="submit">Guardar</button>
+</form></section>
+<section class="panel"><h2>Estado actual</h2>
+<p>{% if logo_colegio %}<img class="marca-logo" src="{{ logo_colegio }}" alt="Logo actual"> Logo cargado.{% else %}Sin logo (se muestra el ícono por defecto).{% endif %}</p>
+<p>{% if color_colegio %}Color personalizado: <code>{{ color_colegio }}</code>{% else %}Color por defecto.{% endif %}</p>
+<div class="acciones">
+  {% if logo_colegio %}<form method="post"><input type="hidden" name="accion" value="quitar_logo"><button type="submit">Quitar logo</button></form>{% endif %}
+  {% if color_colegio %}<form method="post"><input type="hidden" name="accion" value="quitar_color"><button type="submit">Volver al color por defecto</button></form>{% endif %}
+</div></section>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titulo %}{% if session.rol == 'rector' %}Bienvenido a {{ nombre_colegio or 'tu colegio' }}{% else %}Hola, {{ nombre }}{% endif %}{% endblock %}
+{% block sub %}{% if session.rol == 'rector' %}Estado general de la programación académica.{% else %}Bienvenido a {{ nombre_colegio or 'tu colegio' }}. Tu programación y lo que sucede ahora en el colegio.{% endif %}{% endblock %}
+{% block acciones %}{% if session.rol == 'rector' %}<form method="post" action="{{ url_for('generar') }}" onsubmit="return confirm('Esto reemplazará el horario actual y los reemplazos ya asignados. ¿Deseas continuar?')"><button>✨ Generar horario automáticamente</button></form>{% else %}<a class="btn btn-sec" href="{{ url_for('imprimir_horario') }}" target="_blank">🖨️ Imprimir mi horario</a>{% endif %}{% endblock %}
+{% block cuerpo %}
+{% if session.rol == 'rector' %}
+<div class="metricas">
+  <a class="metrica" href="{{ url_for('admin', tabla='profesores') }}"><div class="ico">👩‍🏫</div><div><strong>{{ stats.profesores }}</strong><span>Profesores</span></div></a>
+  <a class="metrica" href="{{ url_for('horario') }}"><div class="ico">📅</div><div><strong>{{ stats.clases }}</strong><span>Clases programadas</span></div></a>
+  <a class="metrica {{ 'ambar' if stats.pendientes_horas else 'verde' }}" href="{{ url_for('cargas') }}"><div class="ico">📊</div><div><strong>{{ stats.pendientes_horas if stats.cargas_configuradas else '—' }}</strong><span>Horas por programar</span><small>{% if not stats.cargas_configuradas %}Configura la intensidad horaria{% elif stats.pendientes %}{{ stats.pendientes }} materia(s) incompletas{% else %}Todo programado{% endif %}</small></div></a>
+  <a class="metrica" href="{{ url_for('aulas') }}"><div class="ico">🏫</div><div><strong>{{ stats.salones_disponibles }}<small> / {{ stats.salones }}</small></strong><span>Aulas libres ahora</span></div></a>
+  <a class="metrica {{ 'rojo' if sin_cubrir_hoy else ('ambar' if ausentes_hoy else 'verde') }}" href="{{ url_for('ausencias') }}"><div class="ico">🗓️</div><div><strong>{{ ausentes_hoy }}</strong><span>Ausencias hoy</span><small>{% if sin_cubrir_hoy %}{{ sin_cubrir_hoy }} clase(s) sin cubrir{% elif ausentes_hoy %}Todas cubiertas{% else %}Nadie ausente{% endif %}</small></div></a>
+  <a class="metrica {{ 'rojo' if stats.conflictos else 'verde' }}" href="{{ url_for('conflictos') }}"><div class="ico">{{ '⚠️' if stats.conflictos else '✅' }}</div><div><strong>{{ stats.conflictos }}</strong><span>Conflictos</span><small>{{ 'Revisa el horario' if stats.conflictos else 'Sin cruces' }}</small></div></a>
+</div>
+{% if claves_iniciales %}
+<section class="tarjeta">
+  <div class="tarjeta-cab"><h2>Claves iniciales sin cambiar</h2><span class="etiqueta ambar">{{ claves_iniciales|length }}</span></div>
+  <p class="ayuda">Estos profesores todavía usan la clave que se les asignó. Pídeles que la cambien en <b>Mi cuenta</b> o asígnales una nueva en <a href="{{ url_for('admin', tabla='profesores') }}">Profesores</a>.</p>
+  <p>{% for c in claves_iniciales %}<span class="etiqueta">{{ c.nombre }}</span> {% endfor %}</p>
+</section>
+{% endif %}
+<div class="dos-col">
+  {% include "_ahora.html" %}
+  <section class="tarjeta">
+    <div class="tarjeta-cab"><h2>Antes de generar el horario</h2>{% if pasos|selectattr('ok')|list|length == pasos|length %}<span class="etiqueta verde">Todo listo</span>{% endif %}</div>
+    <ul class="lista-pasos">{% for p in pasos %}<li><a class="paso {{ 'ok' if p.ok }}" href="{{ p.url }}"><span class="tilde">{{ '✓' if p.ok else '!' }}</span>{{ p.texto }}</a></li>{% endfor %}</ul>
+  </section>
+</div>
+{% else %}
+<div class="metricas">
+  <a class="metrica" href="{{ url_for('horario') }}"><div class="ico">📅</div><div><strong>{{ mis_clases|length }}</strong><span>Clases por semana</span></div></a>
+  <div class="metrica"><div class="ico">📍</div><div><strong>{{ clases_hoy|length }}</strong><span>Clases hoy</span></div></div>
+  <div class="metrica {{ 'ambar' if reemplazos }}"><div class="ico">🔁</div><div><strong>{{ reemplazos|length }}</strong><span>Reemplazos asignados</span></div></div>
+</div>
+{% if reemplazos %}<section class="tarjeta"><div class="tarjeta-cab"><h2>Reemplazos que debes cubrir</h2></div><div class="tabla-scroll"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Materia</th><th>Grupo</th><th>Aula</th></tr></thead><tbody>
+{% for r in reemplazos %}<tr><td>{{ r.fecha }}</td><td>{{ r.inicio }} - {{ r.fin }}</td><td>{{ r.materia }}</td><td>{{ r.grupo }}</td><td>{{ r.salon }}</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
+<div class="dos-col">
+  <section class="tarjeta"><div class="tarjeta-cab"><h2>Mis clases de hoy</h2><a class="btn btn-sec btn-chico" href="{{ url_for('horario') }}">Ver semana completa</a></div>
+  {% if clases_hoy %}<div class="tabla-scroll"><table><thead><tr><th>Hora</th><th>Materia</th><th>Grupo</th><th>Aula</th></tr></thead><tbody>
+  {% for c in clases_hoy %}<tr><td>{{ c.inicio }} - {{ c.fin }}</td><td><span class="materia-tag materia-{{ c.materia_id % 8 }}">{{ c.materia }}</span></td><td>{{ c.grupo }}</td><td>{{ c.salon }}</td></tr>{% endfor %}</tbody></table></div>
+  {% else %}<p class="vacio">No tienes clases programadas hoy.</p>{% endif %}</section>
+  {% include "_ahora.html" %}
+</div>
+{% endif %}
+{% endblock %}

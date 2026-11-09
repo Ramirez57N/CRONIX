@@ -1,0 +1,52 @@
+{% macro item(endpoint, icono, texto, tabla=None, tambien=[]) -%}
+{%- set vista = request.view_args or {} -%}
+{%- set activo = (request.endpoint == endpoint or request.endpoint in tambien) and (tabla is none or vista.get('tabla') == tabla) -%}
+<a class="item{{ ' activo' if activo }}" href="{{ url_for(endpoint, tabla=tabla) if tabla else url_for(endpoint) }}"><span class="ico">{{ icono }}</span><span>{{ texto }}</span></a>
+{%- endmacro %}<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ self.titulo() }} · {{ nombre_colegio or 'Horario escolar' }}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎓%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="{{ url_for('static', filename='estilo.css') }}">
+{% if color_colegio %}<style>:root{--azul:{{ color_colegio }};--azul2:color-mix(in srgb,{{ color_colegio }} 85%,#fff);--noche:color-mix(in srgb,{{ color_colegio }} 30%,#000);--noche2:color-mix(in srgb,{{ color_colegio }} 45%,#000)}</style>{% endif %}
+<script src="{{ url_for('static', filename='app.js') }}" defer></script></head>
+<body class="{{ 'con-lateral' if session.usuario }}">
+{% if session.usuario %}
+<div class="barra-movil"><button type="button" aria-label="Abrir menú" onclick="document.body.classList.toggle('menu-abierto')">☰</button><b>🎓 {{ nombre_colegio or 'Horario escolar' }}</b></div>
+<div class="velo" onclick="document.body.classList.remove('menu-abierto')"></div>
+<aside class="lateral">
+  <div class="marca">{% if logo_colegio %}<img class="marca-logo" src="{{ logo_colegio }}" alt="">{% else %}<span class="marca-ico">🎓</span>{% endif %}{{ nombre_colegio or 'Horario escolar' }}</div>
+  {{ item('inicio', '🏠', 'Inicio') }}
+  {% if session.rol == 'rector' %}
+  <div class="grupo-nav"><h4>HORARIO</h4>
+    {{ item('horario', '📅', 'Horario', tambien=['clase']) }}
+    {{ item('libres', '🟢', 'Profesores libres') }}
+    {{ item('conflictos', '⚠️', 'Conflictos') }}</div>
+  <div class="grupo-nav"><h4>PLANIFICACIÓN</h4>
+    {{ item('cargas', '📊', 'Intensidad horaria') }}
+    {{ item('aulas', '🏫', 'Aulas') }}
+    {{ item('admin', '⏰', 'Franjas', tabla='franjas') }}</div>
+  <div class="grupo-nav"><h4>PERSONAL Y GRUPOS</h4>
+    {{ item('admin', '👩‍🏫', 'Profesores', tabla='profesores') }}
+    {{ item('admin', '📚', 'Materias', tabla='materias') }}
+    {{ item('admin', '👥', 'Grupos', tabla='grupos') }}
+    {{ item('ausencias', '🗓️', 'Ausencias') }}</div>
+  <div class="grupo-nav"><h4>SISTEMA</h4>
+    {{ item('personalizar', '🎨', 'Personalizar colegio') }}
+    {{ item('gestion_docente', '💾', 'Respaldos e historial') }}</div>
+  {% else %}
+  <div class="grupo-nav"><h4>MI ESPACIO</h4>
+    {{ item('horario', '📅', 'Mi horario') }}
+    {{ item('libres', '🟢', 'Profesores libres') }}
+    <a class="item" href="{{ url_for('imprimir_horario') }}" target="_blank"><span class="ico">🖨️</span><span>Imprimir mi horario</span></a></div>
+  {% endif %}
+  <div class="usuario-box"><b>{{ session.usuario }}</b><small>{{ 'Propietario · soporte' if session.get('modo_soporte') else ('Rector' if session.rol == 'rector' else 'Profesor') }}</small>
+    <div><a href="{{ url_for('cuenta') }}">🔑 Mi cuenta</a><a href="{{ url_for('salir') }}">⏻ Salir</a></div></div>
+</aside>
+{% endif %}
+<main class="contenido">
+{% if session.get('modo_soporte') %}<div class="msg error" style="margin-bottom:16px"><strong>Modo de soporte técnico:</strong> estás administrando la institución como propietario. Las acciones quedan registradas. <a href="{{ url_for('propietario_salir_soporte') }}">Volver a la consola</a></div>{% endif %}
+{% with mensajes = get_flashed_messages(with_categories=true) %}{% if mensajes %}<div class="mensajes">{% for cat, m in mensajes %}<p class="msg {{ cat }}">{{ '⚠️' if cat == 'error' else '✓' }} {{ m }}</p>{% endfor %}</div>{% endif %}{% endwith %}
+{% block cabecera %}<header class="pagina-cab"><div><h1>{% block titulo %}{% endblock %}</h1><p>{% block sub %}{% endblock %}</p></div><div class="acciones">{% block acciones %}{% endblock %}</div></header>{% endblock %}
+{% block cuerpo %}{% endblock %}
+</main></body></html>

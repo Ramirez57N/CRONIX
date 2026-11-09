@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block titulo %}Rectores · {{ inst.nombre }}{% endblock %}
+{% block sub %}Cuentas de rector del colegio <code>{{ inst.codigo }}</code>. Las contraseñas no se pueden ver: solo se pueden restablecer.{% endblock %}
+{% block acciones %}<a class="boton" href="{{ url_for('propietario') }}">← Volver a la consola</a>{% endblock %}
+{% block cuerpo %}
+<section class="panel"><h2>Rectores</h2>
+{% if rectores %}<div class="tabla-contenedor"><table><thead><tr><th>Usuario</th><th>Nueva contraseña</th></tr></thead><tbody>
+{% for r in rectores %}<tr><td><strong>{{ r.usuario }}</strong></td><td><form method="post" action="{{ url_for('propietario_rector_clave', codigo=inst.codigo, uid=r.id) }}" class="acciones"><input name="clave" type="password" minlength="6" required placeholder="Mínimo 6 caracteres" autocomplete="new-password"><button type="submit">Restablecer contraseña</button></form></td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p class="suave">Este colegio todavía no tiene rector. Crea uno abajo.</p>{% endif %}</section>
+<section class="panel"><h2>Crear otro rector</h2><p class="suave">Sirve, por ejemplo, cuando cambia la rectoría del colegio.</p>
+<form method="post" class="form-grid"><label>Usuario<input name="usuario" required minlength="3" autocomplete="off"></label><label>Contraseña inicial<input name="clave" type="password" required minlength="6" autocomplete="new-password"></label><button type="submit">Crear rector</button></form></section>
+{% endblock %}

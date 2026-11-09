@@ -1,0 +1,4 @@
+{% extends 'base.html' %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block cabecera %}{% endblock %}
+{% block cuerpo %}<div class="acceso"><div class="acceso-caja"><div class="logo">🛡️</div><h1>Plataforma escolar</h1><p class="suave">{{ titulo }}</p><form method="post"><label>Usuario<input name="usuario" required autocomplete="username"></label><label>Contraseña<input name="clave" type="password" required autocomplete="current-password"></label><button>{{ boton }}</button></form><p class="suave" style="margin-top:18px"><a href="{{ url_for('colegio_login') }}">Acceso de instituciones</a> · <a href="{{ url_for('login') }}">Acceso anterior</a></p></div></div>{% endblock %}

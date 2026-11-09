@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}Ausencias y reemplazos{% endblock %}
+{% block sub %}Registra quién falta y asigna quién cubre cada clase.{% endblock %}
+{% block cuerpo %}
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Registrar ausencia</h2></div>
+<p class="ayuda">Si el profesor falta varios días (por ejemplo, una incapacidad), indica la fecha inicial y la final: se registra un día por cada día hábil.</p>
+<form method="post" class="form-linea">
+  <label>Profesor<select name="profesor_id" required>{% for p in profesores %}<option value="{{ p.id }}">{{ p.nombre }}</option>{% endfor %}</select></label>
+  <label>Desde<input type="date" name="desde" value="{{ hoy }}" required></label>
+  <label>Hasta (opcional)<input type="date" name="hasta"></label>
+  <label>Motivo<select name="motivo"><option>Incapacidad</option><option>Permiso</option><option>Calamidad</option><option>Otro</option></select></label>
+  <label style="flex:1;min-width:180px">Observaciones<input name="observaciones" placeholder="Opcional"></label>
+  <button>Registrar ausencia</button></form></section>
+
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Ausencias de hoy en adelante</h2></div>
+<p class="ayuda">Solo se ofrecen profesores libres en esa franja y que no estén ausentes. Los marcados con ★ dictan esa materia.</p>
+{% for a in proximas %}<div class="tarjeta" style="margin:0 0 14px;box-shadow:none">
+  <div class="tarjeta-cab" style="margin-bottom:10px"><div><b>{{ a.profesor }}</b> · {{ a.fecha }} · <span class="etiqueta">{{ a.motivo }}</span>{% if a.observaciones %} <small>{{ a.observaciones }}</small>{% endif %}
+  {% if a.clases %}{% if a.sin_cubrir %} <span class="ausente">· {{ a.sin_cubrir }} clase(s) sin cubrir</span>{% else %} <span class="cubierto">· todas cubiertas</span>{% endif %}{% else %} <small>· no tiene clases ese día</small>{% endif %}</div>
+  <form method="post" action="{{ url_for('quitar_ausencia', aid=a.id) }}" onsubmit="return confirm('Se eliminará la ausencia y sus reemplazos. ¿Continuar?')"><button class="rojo btn-chico">Eliminar ausencia</button></form></div>
+  {% if a.clases %}<div class="tabla-scroll"><table><thead><tr><th>Hora</th><th>Grupo</th><th>Materia</th><th>Aula</th><th>Quién cubre</th></tr></thead><tbody>
+  {% for c in a.clases %}<tr><td>{{ c.inicio }} - {{ c.fin }}</td><td>{{ c.grupo }}</td><td><span class="materia-tag materia-{{ c.materia_id % 8 }}">{{ c.materia }}</span></td><td>{{ c.salon }}</td><td>
+  {% if c.reemplazo %}<span class="cubierto">{{ c.reemplazo.reemplazo }}</span>
+    <form method="post" action="{{ url_for('quitar_reemplazo', rid=c.reemplazo.id) }}" style="display:inline"><button class="rojo btn-chico">Quitar</button></form>
+  {% elif c.candidatos %}<form method="post" action="{{ url_for('crear_reemplazo') }}" class="fila">
+    <input type="hidden" name="ausencia_id" value="{{ a.id }}"><input type="hidden" name="clase_id" value="{{ c.id }}">
+    <select name="profesor_id">{% for p in c.candidatos %}<option value="{{ p.id }}">{{ p.nombre }}{% if p.ensenia %} ★{% endif %}</option>{% endfor %}</select><button class="btn-chico">Asignar</button></form>
+  {% else %}<span class="ausente">Nadie libre en esa franja</span>{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>{% endif %}</div>
+{% else %}<p class="vacio">No hay ausencias registradas de hoy en adelante.</p>{% endfor %}</section>
+
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Historial reciente</h2></div>
+<div class="tabla-scroll"><table><thead><tr><th>Fecha</th><th>Profesor</th><th>Motivo</th><th>Observaciones</th></tr></thead><tbody>
+{% for a in pasadas %}<tr><td>{{ a.fecha }}</td><td>{{ a.profesor }}</td><td>{{ a.motivo }}</td><td>{{ a.observaciones }}</td></tr>{% else %}<tr><td colspan="4" class="vacio">Sin ausencias anteriores.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

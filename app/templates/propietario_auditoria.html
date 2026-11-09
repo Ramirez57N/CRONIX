@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block titulo %}Auditoría de soporte{% endblock %}
+{% block sub %}Últimas 300 acciones del propietario en las instituciones (hora UTC).{% endblock %}
+{% block acciones %}<a class="boton" href="{{ url_for('propietario') }}">← Volver a la consola</a>{% endblock %}
+{% block cuerpo %}
+<section class="panel">{% if filas %}<div class="tabla-contenedor"><table><thead><tr><th>Fecha (UTC)</th><th>Propietario</th><th>Institución</th><th>Acción</th></tr></thead><tbody>
+{% for f in filas %}<tr><td>{{ f.fecha }}</td><td>{{ f.propietario }}</td><td>{{ f.institucion }}</td><td>{{ f.accion }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p class="suave">Todavía no hay acciones registradas.</p>{% endif %}</section>
+{% endblock %}

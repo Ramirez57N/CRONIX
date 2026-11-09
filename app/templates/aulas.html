@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}Aulas{% endblock %}
+{% block sub %}Las aulas principales pertenecen a un grupo; las especiales (laboratorios, sala de sistemas, cancha…) sirven a varias materias.{% endblock %}
+{% block cuerpo %}
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Todas las aulas</h2></div>
+<form method="post" class="form-linea" style="margin-bottom:16px"><input type="hidden" name="accion" value="crear">
+  <label style="flex:1;min-width:200px">Nombre del aula<input name="nombre" placeholder="Ej. 101 o Aula de sistemas" required></label>
+  <label>Tipo<select name="tipo" required><option value="principal">Aula principal</option><option value="especial">Aula especial</option></select></label>
+  <button>Crear aula</button></form>
+<div class="tabla-scroll"><table><thead><tr><th>Aula</th><th>Tipo</th><th>Uso</th><th></th></tr></thead><tbody>
+{% for s in salones %}<tr><td><b>{{ s.nombre }}</b></td>
+  <td><span class="etiqueta {{ 'azul' if s.tipo == 'principal' else 'ambar' }}">{{ 'Principal' if s.tipo == 'principal' else 'Especial' }}</span></td>
+  <td>{% if s.tipo == 'principal' %}{% if grupo_por_aula.get(s.id) %}Grupo {{ grupo_por_aula[s.id] }}{% else %}<small>Sin grupo asignado</small>{% endif %}{% else %}{{ especiales.get(s.id, [])|map(attribute='nombre')|join(', ') or 'Sin materias asociadas' }}{% endif %}</td>
+  <td class="acciones-celda">
+    <form method="post" class="fila"><input type="hidden" name="accion" value="tipo"><input type="hidden" name="salon_id" value="{{ s.id }}">
+      <select name="tipo"><option value="principal" {{ 'selected' if s.tipo == 'principal' }}>Principal</option><option value="especial" {{ 'selected' if s.tipo == 'especial' }}>Especial</option></select><button class="btn-sec btn-chico">Cambiar tipo</button></form>
+    <form method="post" action="{{ url_for('eliminar', tabla='salones', id=s.id) }}" onsubmit="return confirm('¿Eliminar esta aula?')"><button class="rojo btn-chico">Eliminar</button></form></td></tr>
+{% else %}<tr><td colspan="4" class="vacio">Aún no hay aulas. Crea la primera arriba.</td></tr>{% endfor %}
+</tbody></table></div></section>
+
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Aula principal de cada grupo</h2></div>
+<div class="tabla-scroll"><table><thead><tr><th>Grupo</th><th>Aula principal</th></tr></thead><tbody>
+{% for g in grupos %}<tr><td><b>{{ g.grupo }}</b></td><td>
+  <form method="post" class="fila"><input type="hidden" name="accion" value="grupo"><input type="hidden" name="grupo_id" value="{{ g.grupo_id }}">
+    <select name="salon_id" required><option value="">Seleccionar aula principal</option>{% for s in aulas_principales %}<option value="{{ s.id }}" {{ 'selected' if g.salon_id == s.id }}>{{ s.nombre }}</option>{% endfor %}</select>
+    <button class="btn-chico">Guardar</button>{% if g.salon_id %}<span class="etiqueta verde">✓ {{ g.salon }}</span>{% endif %}</form></td></tr>
+{% else %}<tr><td colspan="2" class="vacio">Aún no hay grupos.</td></tr>{% endfor %}
+</tbody></table></div></section>
+
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Materias de cada aula especial</h2></div>
+<p class="ayuda">Una aula especial puede servir a varias materias, y una materia puede usar más de un aula especial: el generador elige una que esté libre.</p>
+{% for s in aulas_especiales %}{% set mine = especiales.get(s.id, [])|map(attribute='id')|list %}<details class="especial-aula"><summary><b>{{ s.nombre }}</b> · <small>{{ especiales.get(s.id, [])|map(attribute='nombre')|join(', ') or 'Sin materias asociadas' }}</small></summary>
+<form method="post"><input type="hidden" name="accion" value="materias"><input type="hidden" name="salon_id" value="{{ s.id }}"><div class="checks-materias">{% for m in materias %}<label class="chk"><input type="checkbox" name="materias" value="{{ m.id }}" {{ 'checked' if m.id in mine }}> {{ m.nombre }}</label>{% endfor %}</div><div class="acciones-form"><button class="btn-chico">Guardar materias del aula</button></div></form></details>
+{% else %}<p class="vacio">Aún no tienes aulas especiales. Crea una arriba o cambia el tipo de un aula existente.</p>{% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block titulo %}Conflictos{% endblock %}
+{% block sub %}Revisión de cruces entre profesores, grupos y aulas en el horario registrado.{% endblock %}
+{% block cuerpo %}
+{% if choques %}<div class="tabla-scroll"><table><thead><tr><th>Tipo</th><th>Día</th><th>Franja</th><th>Clase</th></tr></thead><tbody>{% for x in choques %}<tr><td><span class="etiqueta rojo">{{ x.tipo }}</span></td><td>{{ dias[x.clase.dia]|capitalize }}</td><td>{{ x.clase.inicio }} - {{ x.clase.fin }}</td><td>{{ x.clase.materia }} · {{ x.clase.grupo }} · {{ x.clase.profesor }} <small>(también: {{ x.otra.materia }} / {{ x.otra.grupo }})</small></td></tr>{% endfor %}</tbody></table></div>
+{% else %}<div class="vacio-grande">✅ No se encontraron conflictos entre profesores, grupos o aulas.</div>{% endif %}
+{% endblock %}
